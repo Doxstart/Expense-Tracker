@@ -5,6 +5,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const amountInput = document.getElementById('amount');
     const expenseChart = document.getElementById('expense-chart');
 
+    let selectedMonth;
+    let selectedYear;
+    let myChart;
+
     //Generate year options dinamically
     for (let year = 2010; year <= 2040; year++) {
         const option = document.createElement('option');
@@ -15,18 +19,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     //Initialize expense objects with categories
     const expenses = {
-        January: { Housing: 0, Food: 0, Transportation: 0, Bills: 0, Miscellaneous: 0 },
-        February: { Housing: 0, Food: 0, Transportation: 0, Bills: 0, Miscellaneous: 0 },
-        March: { Housing: 0, Food: 0, Transportation: 0, Bills: 0, Miscellaneous: 0 },
-        April: { Housing: 0, Food: 0, Transportation: 0, Bills: 0, Miscellaneous: 0 },
-        May: { Housing: 0, Food: 0, Transportation: 0, Bills: 0, Miscellaneous: 0 },
-        June: { Housing: 0, Food: 0, Transportation: 0, Bills: 0, Miscellaneous: 0 },
-        July: { Housing: 0, Food: 0, Transportation: 0, Bills: 0, Miscellaneous: 0 },
-        August: { Housing: 0, Food: 0, Transportation: 0, Bills: 0, Miscellaneous: 0 },
-        September: { Housing: 0, Food: 0, Transportation: 0, Bills: 0, Miscellaneous: 0 },
-        October: { Housing: 0, Food: 0, Transportation: 0, Bills: 0, Miscellaneous: 0 },
-        November: { Housing: 0, Food: 0, Transportation: 0, Bills: 0, Miscellaneous: 0 },
-        December: { Housing: 0, Food: 0, Transportation: 0, Bills: 0, Miscellaneous: 0 },
+        Enero: { Hogar: 0, Alimento: 0, Transporte: 0, Facturas: 0, Otros: 0 },
+        Febrero: { Hogar: 0, Alimento: 0, Transporte: 0, Facturas: 0, Otros: 0 },
+        Marzo: { Hogar: 0, Alimento: 0, Transporte: 0, Facturas: 0, Otros: 0 },
+        Abril: { Hogar: 0, Alimento: 0, Transporte: 0, Facturas: 0, Otros: 0 },
+        Mayo: { Hogar: 0, Alimento: 0, Transporte: 0, Facturas: 0, Otros: 0 },
+        Junio: { Hogar: 0, Alimento: 0, Transporte: 0, Facturas: 0, Otros: 0 },
+        Julio: { Hogar: 0, Alimento: 0, Transporte: 0, Facturas: 0, Otros: 0 },
+        Agosto: { Hogar: 0, Alimento: 0, Transporte: 0, Facturas: 0, Otros: 0 },
+        Septiembre: { Hogar: 0, Alimento: 0, Transporte: 0, Facturas: 0, Otros: 0 },
+        Octubre: { Hogar: 0, Alimento: 0, Transporte: 0, Facturas: 0, Otros: 0 },
+        Noviembre: { Hogar: 0, Alimento: 0, Transporte: 0, Facturas: 0, Otros: 0 },
+        Diciembre: { Hogar: 0, Alimento: 0, Transporte: 0, Facturas: 0, Otros: 0 },
     };
 
     //Load expenses
@@ -41,26 +45,77 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem(key, JSON.stringify(expenses[month]));
     }
 
+    //Get Selected Month and Year
+    function getSelectedMonthYear() {
+        selectedMonth = monthSelect.value;
+        selectedYear = yearSelect.value;
+
+        if (!selectedMonth || !selectedYear) {
+            alert('Mes o Año no seleccionados');
+            return;
+        }
+
+        if (!expenses[selectedMonth]) {
+            expenses[selectedMonth] = { Hogar: 0, Alimento: 0, Transporte: 0, Facturas: 0, Otros: 0 };
+        }
+    }
+
+    //Update Chart
+    function updateChart() {
+        getSelectedMonthYear();
+
+        const expenseData = getExpensesFromLocalStorage(selectedMonth, selectedYear);
+        Object.assign(expenses[selectedMonth], expenseData);
+
+        const ctx = expenseChart.getContext('2d');
+
+        if (myChart) {
+            myChart.destroy();
+        }
+
+        myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(expenses[selectedMonth]),
+                datasets: [{
+                    data: Object.values(expenses[selectedMonth]),
+                    backgroundColor: [
+                    '#FF6384',  // Hogar
+                    '#4CAF50',  // Alimento
+                    '#FFCE56',  // Transporte
+                    '#36A2EB',  // Facturas
+                    '#FF9F40'   // Otros
+                    ],
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                return `${tooltipItem.label}: $${tooltipItem.raw}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
     //Handle form submission
     function handleSubmit(event) {
         event.preventDefault();
+        getSelectedMonthYear();
         
         const selectedMonth = monthSelect.value;
         const selectedYear = yearSelect.value;
         const category = event.target.category.value;
         const amount = parseFloat(event.target.amount.value);
-
-        if (!selectedMonth || !selectedYear) {
-            alert('Month or year not selected');
-            return;
-        }
-
-        if (!expenses[selectedMonth]) {
-            expenses[selectedMonth] = { Housing: 0, Food: 0, Transportation: 0, Bills: 0, Miscellaneous: 0 };
-        }
-
-        const expenseData = getExpensesFromLocalStorage(selectedMonth, selectedYear);
-        Object.assign(expenses[selectedMonth], expenseData);
 
         const currentAmount = expenses[selectedMonth][category] || 0;
 
@@ -72,12 +127,14 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Invalid amount: Cannot reduce the category below zero.')
         }
 
-        console.log(expenses[selectedMonth]);
         saveExpensesToLocalStorage(selectedMonth, selectedYear);
+        updateChart();
         amountInput.value = '';
     }
 
     expenseForm.addEventListener('submit', handleSubmit);
+    monthSelect.addEventListener('change', updateChart);
+    yearSelect.addEventListener('change', updateChart);
 
     //Set default month and year based on current month and year
     function setDefaultMonthYear() {
@@ -89,4 +146,5 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     setDefaultMonthYear();
+    updateChart();
 });
