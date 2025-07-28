@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (amount < 0 && currentAmount >= Math.abs(amount)) {
             expenses[selectedMonth][category] = currentAmount + amount;
         } else {
-            alert('Invalid amount: Cannot reduce the category below zero.')
+            alert('Cantidad no válida: No se puede reducir la categoría a menor que cero.')
         }
 
         saveExpensesToLocalStorage(selectedMonth, selectedYear);
